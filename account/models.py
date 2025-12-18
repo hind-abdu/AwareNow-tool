@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 # ==== Contract Model => 3 contract saved in DB ====
 class SubscriptionPlan(models.Model):
@@ -30,13 +31,20 @@ class Company(models.Model):
         choices=(
             ('ACTIVE', 'Active'),
             ('EXPIRED', 'Expired'),
-            ('SUSPENDED', 'Suspended'),
         ),
         default='ACTIVE'
     )
 
     def __str__(self):
         return self.name
+    
+    @property
+    def license_status(self):
+        today = timezone.now().date()
+
+        if today <= self.license_end_date:
+            return "ACTIVE"
+        return "EXPIRED"
 
 # ==== User Model ====
 class User(AbstractUser):

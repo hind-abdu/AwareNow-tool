@@ -10,5 +10,6 @@ urlpatterns = [
     "companies/<int:company_id>/super-admin/",
     views.create_super_admin,
     name="create-super-admin"
-),
+    ),
+    path("logout/", views.logout_view, name="logout"),
 ]

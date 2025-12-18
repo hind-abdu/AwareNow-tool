@@ -7,14 +7,50 @@ from .forms import SuperAdminForm
 from .models import Company
 from .services import send_activation_email
 from django.shortcuts import get_object_or_404
+from django.contrib.auth import logout
+from .models import SubscriptionPlan
+from django.utils import timezone
+
 
 # ==== admin platform login ====
 @login_required
 def platform_dashboard(request):
     if not request.user.is_superuser:
         return redirect("account:platform-login")
+    
+    plans = SubscriptionPlan.objects.all()
+    companies = Company.objects.all()
 
-    return render(request, "account/platform_dashboard.html")
+     # Filters
+    status_filter = request.GET.get("status")
+    plan_filter = request.GET.get("plan")
+
+    if plan_filter:
+        companies = companies.filter(subscription_plan_id=plan_filter)
+
+    if status_filter:
+        today = timezone.now().date()
+        if status_filter == "ACTIVE":
+            companies = companies.filter(license_end_date__gte=today)
+        elif status_filter == "EXPIRED":
+            companies = companies.filter(license_end_date__lt=today)
+
+    context = {
+        "plans": plans,
+        "companies": companies
+    }
+
+    return render(request, "account/platform_dashboard.html", context)
+
+    # return render(
+    #     request,
+    #     "account/platform_dashboard.html",
+    #     {
+    #         "plans": plans,
+    #         "companies": companies
+    #     }
+    # )
+    #return render(request, "account/platform_dashboard.html")
 
 def platform_login(request):
     # اذا مسجل دخول ينقله لصفحة الدشبورد للبلاتفورم 
@@ -31,7 +67,7 @@ def platform_login(request):
             return redirect("account:platform-dashboard")
 
         return render(request, "account/login.html", {
-            "error": "Invalid credentials or not a platform admin"
+            "error": "Invalid email or password"
         })
 
     return render(request, "account/login.html")
@@ -86,5 +122,8 @@ def create_super_admin(request, company_id):
         "company": company
     })
 
-
+# ==== Logout =====
+def logout_view(request):
+    logout(request)
+    return redirect("account:platform-login")
 

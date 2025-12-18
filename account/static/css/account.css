@@ -1,33 +1,19 @@
-/* Auth pages only */
-
-.auth-wrapper {
-    min-height: 100vh;
-    background: var(--bg);
+/* ===== Login Page ===== */
+.btn-login {
+    background-color: var(--brand);
+    color: #fff;
+    border-radius: 12px;
 }
   
+.btn-login:hover {
+    background-color: var(--brand-dark);
+    color: #fff;
+}
+
 .auth-card {
     width: 100%;
     max-width: 420px;
     border-radius: 20px;
     box-shadow: var(--shadow);
-}
-  
-.auth-title {
-    font-weight: 700;
-}
-  
-.auth-subtitle {
-    color: #6b7280;
-    font-size: 14px;
-}
-  
-.form-control {
-    border-radius: 12px;
-    padding: 10px 14px;
-}
-  
-.btn-auth {
-    border-radius: 12px;
-    font-weight: 600;
 }
   
