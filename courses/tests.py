@@ -163,7 +163,6 @@ def test_exact_models():
                 'role': 'EMPLOYEE',
                 'company': company,
                 'department': 'IT Security'
-                # Note: No job_title or phone_number - they're not in your model
             }
         )
         if created:
@@ -198,7 +197,7 @@ def test_exact_models():
         employee_profile.average_quiz_score = 80.0
         employee_profile.phishing_tests_taken = 5
         employee_profile.phishing_tests_passed = 4
-        employee_profile.save()  # This triggers calculate_awareness_score()
+        employee_profile.save()
         
         print(f"   Awareness Score: {employee_profile.awareness_score}")
         if employee_profile.phishing_tests_taken > 0:
@@ -285,6 +284,7 @@ def test_exact_models():
         employee_assignment = EmployeeCourseAssignment.objects.create(
             employee=employee_profile,
             course=course,
+            company_course_group=course_group,  # FIXED: Added required field
             assigned_by=company_admin,
             due_date=datetime.now().date() + timedelta(days=14),
             status='assigned'
@@ -300,6 +300,7 @@ def test_exact_models():
             duplicate = EmployeeCourseAssignment.objects.create(
                 employee=employee_profile,
                 course=course,
+                company_course_group=course_group,  # FIXED: Added required field
                 assigned_by=company_admin
             )
             print("   ❌ Should have failed (duplicate assignment)")
