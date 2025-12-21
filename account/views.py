@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from .forms import CompanyForm, SuperAdminForm, CompanyGroupCreateForm
 from django.contrib.auth.decorators import login_required
 import uuid
-from .models import Company, User, CompanyGroup
+from .models import Company, User, CompanyGroup, EmployeeProfile
 from .services import send_activation_email
 from django.shortcuts import get_object_or_404
 # from django.contrib.auth import logout
@@ -11,6 +11,8 @@ from .models import SubscriptionPlan
 from django.utils import timezone
 from django.db import transaction
 from django.contrib import messages
+from django.db.models import Count, Q
+from courses.models import CompanyCourseAssignment, Course, EmployeeCourseAssignment, EmployeeCourseProgress, QuizAttempt, CompanyCourseGroup
 
 # ==== admin platform Dashboard ====
 @login_required
@@ -47,8 +49,227 @@ def platform_dashboard(request):
 def company_dashboard(request):
     if request.user.role != "COMPANY_ADMIN":
         return redirect("account:platform-login")
+    
+    company = request.user.company
+    
+    # ========== PROGRESS STATISTICS ==========
+    total_employees = User.objects.filter(company=company, is_disabled=False, role='EMPLOYEE').count()
+    
+    # Get assigned courses for this company
+    assigned_courses = CompanyCourseAssignment.objects.filter(company=company).select_related('course')
+    total_assigned_courses = assigned_courses.count()
+    
+    # Employee progress statistics
+    employee_assignments = EmployeeCourseAssignment.objects.filter(
+        employee__user__company=company
+    )
+    
+    completed_count = employee_assignments.filter(status='completed').count()
+    in_progress_count = employee_assignments.filter(status='in_progress').count()
+    assigned_count = employee_assignments.filter(status='assigned').count()
+    total_assignments = employee_assignments.count()
+    
+    completion_rate = (completed_count / total_assignments * 100) if total_assignments > 0 else 0
+    
+    # Get user groups for this company
+    user_groups = CompanyGroup.objects.filter(company=company, is_system=False)
+    
+    # ========== COURSES WITH ASSIGNMENT INFO ==========
+    courses_with_groups = []
+    for assignment in assigned_courses:
+        course = assignment.course
+        
+        # Find which groups have this course assigned
+        assigned_groups = []
+        for group in user_groups:
+            # Check if any user in this group is assigned to this course
+            users_in_group = group.users.filter(is_disabled=False, role='EMPLOYEE')
+            if users_in_group.exists():
+                # Check if any of these users have this course assigned
+                for user in users_in_group:
+                    try:
+                        if hasattr(user, 'employee_profile'):
+                            if EmployeeCourseAssignment.objects.filter(
+                                employee=user.employee_profile,
+                                course=course
+                            ).exists():
+                                assigned_groups.append(group)
+                                break
+                    except EmployeeProfile.DoesNotExist:
+                        continue
+        
+        # Get employee assignment stats for this course
+        course_assignments = EmployeeCourseAssignment.objects.filter(
+            employee__user__company=company,
+            course=course
+        )
+        
+        courses_with_groups.append({
+            'assignment': assignment,
+            'course': course,
+            'assigned_groups': assigned_groups,
+            'total_employees_assigned': course_assignments.count(),
+            'completed_count': course_assignments.filter(status='completed').count(),
+        })
+    
+    context = {
+        'company': company,
+        'total_employees': total_employees,
+        'total_assigned_courses': total_assigned_courses,
+        'completed_count': completed_count,
+        'in_progress_count': in_progress_count,
+        'assigned_count': assigned_count,
+        'total_assignments': total_assignments,
+        'completion_rate': round(completion_rate, 1),
+        'courses_with_groups': courses_with_groups,
+        'user_groups': user_groups,
+    }
+    
+    return render(request, "account/company_dashboard.html", context)
 
-    return render(request, "account/company_dashboard.html")
+
+# ====== ASSIGN COURSE TO GROUP ======
+@login_required
+def assign_course_to_group(request, course_id):
+    if request.user.role != "COMPANY_ADMIN":
+        return redirect("account:platform-login")
+    
+    company = request.user.company
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Check if course is assigned to this company
+    if not CompanyCourseAssignment.objects.filter(company=company, course=course).exists():
+        messages.error(request, "This course is not assigned to your company.")
+        return redirect("account:company-dashboard")
+    
+    if request.method == 'POST':
+        group_ids = request.POST.getlist('groups')
+        assigned_count = 0
+        
+        for group_id in group_ids:
+            try:
+                group = CompanyGroup.objects.get(id=group_id, company=company)
+                
+                # IMPORTANT: Create or get the CompanyCourseGroup first
+                company_course_group, created = CompanyCourseGroup.objects.get_or_create(
+                    company=company,
+                    name=f"{course.title} - {group.name}",
+                    defaults={
+                        'description': f"Course '{course.title}' assigned to group '{group.name}'",
+                        'created_by': request.user
+                    }
+                )
+                
+                # Add course to the group's courses
+                company_course_group.courses.add(course)
+                
+                # Get all employees in this group
+                users_in_group = group.users.filter(is_disabled=False, role='EMPLOYEE')
+                
+                for user in users_in_group:
+                    # Check if employee profile exists, create if not
+                    employee_profile, created = EmployeeProfile.objects.get_or_create(
+                        user=user,
+                        defaults={
+                            'employee_id': f"EMP{user.id:04d}",
+                            'awareness_score': 0,
+                            'total_points': 0
+                        }
+                    )
+                    
+                    # Add employee to the group's assigned employees
+                    company_course_group.assigned_to_employees.add(employee_profile)
+                    
+                    # Create assignment WITH company_course_group
+                    if not EmployeeCourseAssignment.objects.filter(
+                        employee=employee_profile,
+                        course=course,
+                        company_course_group=company_course_group
+                    ).exists():
+                        EmployeeCourseAssignment.objects.create(
+                            employee=employee_profile,
+                            course=course,
+                            company_course_group=company_course_group,  # This was missing!
+                            assigned_by=request.user,
+                            status='assigned'
+                        )
+                        assigned_count += 1
+                        
+            except CompanyGroup.DoesNotExist:
+                continue
+        
+        if assigned_count > 0:
+            messages.success(request, f"✅ Course assigned to {assigned_count} employees in selected groups.")
+        else:
+            messages.info(request, "No new assignments were created.")
+        
+        return redirect("account:company-dashboard")
+    
+    messages.error(request, "Invalid request method.")
+    return redirect("account:company-dashboard")
+
+# ====== COURSE EMPLOYEE PROGRESS ======
+@login_required
+def course_employee_progress(request, course_id):
+    if request.user.role != "COMPANY_ADMIN":
+        return redirect("account:platform-login")
+    
+    company = request.user.company
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Check if course is assigned to this company
+    if not CompanyCourseAssignment.objects.filter(company=company, course=course).exists():
+        messages.error(request, "This course is not assigned to your company.")
+        return redirect("account:company-dashboard")
+    
+    # Get all employee assignments for this course
+    employee_assignments = EmployeeCourseAssignment.objects.filter(
+        employee__user__company=company,
+        course=course
+    ).select_related(
+        'employee',
+        'employee__user'
+    ).order_by('employee__user__last_name', 'employee__user__first_name')
+    
+    # Get quiz attempts for this course
+    quiz_attempts = QuizAttempt.objects.filter(
+        quiz__course=course,
+        employee__user__company=company
+    ).select_related('employee', 'employee__user')
+    
+    # Organize data by employee
+    employees_progress = []
+    for assignment in employee_assignments:
+        employee = assignment.employee
+        
+        # Get latest quiz attempt for this employee
+        latest_quiz = quiz_attempts.filter(employee=employee).order_by('-started_at').first()
+        
+        # Get detailed progress if exists
+        try:
+            detailed_progress = assignment.detailed_progress
+        except EmployeeCourseProgress.DoesNotExist:
+            detailed_progress = None
+        
+        employees_progress.append({
+            'assignment': assignment,
+            'employee': employee,
+            'user': employee.user,
+            'latest_quiz': latest_quiz,
+            'detailed_progress': detailed_progress,
+        })
+    
+    context = {
+        'company': company,
+        'course': course,
+        'employees_progress': employees_progress,
+        'total_employees': employee_assignments.count(),
+        'completed_count': employee_assignments.filter(status='completed').count(),
+        'in_progress_count': employee_assignments.filter(status='in_progress').count(),
+        'assigned_count': employee_assignments.filter(status='assigned').count(),
+    }
+    
+    return render(request, "account/course_employee_progress.html", context)
 
 # ==== Employee platform Dashboard ====
 @login_required

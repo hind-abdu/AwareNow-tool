@@ -1,0 +1,204 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ course.title }} - Employee Progress{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- Header with Back Button -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'account:company-dashboard' %}" class="btn btn-outline-dark btn-sm mb-2">
+                ← Back to Dashboard
+            </a>
+            <h3 class="fw-bold mb-0">{{ course.title }}</h3>
+            <p class="text-muted mb-0">
+                Employee Progress Overview • {{ company.name }}
+            </p>
+        </div>
+        <div class="text-end">
+            <small class="text-muted d-block">Total Employees: {{ total_employees }}</small>
+            <small class="text-muted d-block">Completion: {{ completed_count }}/{{ total_employees }}</small>
+        </div>
+    </div>
+
+    <!-- Course Summary -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-dark">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">COMPLETED</h6>
+                    <h2 class="fw-bold">{{ completed_count }}</h2>
+                    <small class="text-muted">employees</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-dark">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">IN PROGRESS</h6>
+                    <h2 class="fw-bold">{{ in_progress_count }}</h2>
+                    <small class="text-muted">employees</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-dark">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">ASSIGNED</h6>
+                    <h2 class="fw-bold">{{ assigned_count }}</h2>
+                    <small class="text-muted">not started</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Info Card -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    {% if course.thumbnail %}
+                    <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" 
+                         class="img-fluid rounded">
+                    {% else %}
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                         style="height: 150px;">
+                        <i class="fas fa-video fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-9">
+                    <h5 class="fw-bold">{{ course.title }}</h5>
+                    <p class="text-muted">{{ course.brief_description }}</p>
+                    <div class="d-flex gap-3">
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-clock me-1"></i> {{ course.video_duration_minutes }} min
+                        </span>
+                        {% if course.category %}
+                        <span class="badge bg-dark">{{ course.category.name }}</span>
+                        {% endif %}
+                        <span class="badge bg-secondary">{{ course.points_reward }} points</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Progress Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Employee Progress</h5>
+            <small class="text-light">{{ employees_progress|length }} employees</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Employee</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Quiz Score</th>
+                            <th class="pe-4">Completion Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in employees_progress %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-muted"></i>
+                                    </div>
+                                    <div>
+                                        <strong>{{ item.user.get_full_name|default:item.user.username }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ item.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.user.department %}
+                                <span class="badge bg-light text-dark">{{ item.user.department }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.assignment.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                                {% elif item.assignment.status == 'in_progress' %}
+                                <span class="badge bg-warning">In Progress</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Assigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.detailed_progress %}
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        {% if item.detailed_progress.video_total_seconds > 0 %}
+                                        {% widthratio item.detailed_progress.video_watched_seconds item.detailed_progress.video_total_seconds 100 as progress_percent %}
+                                        <div class="progress-bar bg-dark" style="width: {{ progress_percent }}%"></div>
+                                        {% endif %}
+                                    </div>
+                                    <small>
+                                        {% if item.detailed_progress.video_total_seconds > 0 %}
+                                        {% widthratio item.detailed_progress.video_watched_seconds item.detailed_progress.video_total_seconds 100 %}%
+                                        {% else %}
+                                        0%
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">No data</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.assignment.last_accessed %}
+                                <small class="text-muted">{{ item.assignment.last_accessed|date:"M d, Y" }}</small>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.latest_quiz %}
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar {% if item.latest_quiz.passed %}bg-success{% else %}bg-danger{% endif %}" 
+                                             style="width: {{ item.latest_quiz.score }}%"></div>
+                                    </div>
+                                    <small>{{ item.latest_quiz.score|floatformat:1 }}%</small>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4">
+                                {% if item.assignment.completed_at %}
+                                <small class="text-muted">{{ item.assignment.completed_at|date:"M d, Y" }}</small>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                No employees assigned to this course yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -5,10 +5,18 @@ app_name = 'account'
 urlpatterns = [
     path("login/", views.platform_login, name="platform-login"),
     path("dashboard/", views.platform_dashboard, name="platform-dashboard"),
-    path("company/dashboard/", views.company_dashboard, name="company-dashboard"),
     path("employee/dashboard/", views.employee_dashboard, name="employee-dashboard"),
     path("companies/create/", views.create_company, name="create-company"),
     path("logout/", views.logout_view, name="logout"),
+
+    path("company/dashboard/", views.company_dashboard, name="company-dashboard"),
+    path("company/courses/<int:course_id>/progress/", 
+         views.course_employee_progress, 
+         name="course_employee_progress"),
+    path("company/courses/<int:course_id>/assign-group/", 
+         views.assign_course_to_group, 
+         name="assign_course_to_group"),
+
     path(
     "activate/<uuid:token>/",
     views.activate_account,

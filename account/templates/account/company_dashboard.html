@@ -1,12 +1,581 @@
 {% extends "core/base.html" %}
+{% load static %}
 
 {% block title %}Company Dashboard{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h3 class="fw-bold">Company Dashboard</h3>
-    <p class="text-muted">
-        Welcome {{ request.user.company.name }}
-    </p>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">Company Dashboard</h3>
+            <p class="text-muted mb-0">
+                {{ company.name }} - Welcome {{ request.user.get_full_name|default:request.user.username }}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'account:company-users' %}" class="btn btn-outline-dark btn-sm me-2">
+                <i class="fas fa-users me-1"></i> Manage Users
+            </a>
+            <a href="{% url 'account:company-groups' %}" class="btn btn-outline-dark btn-sm">
+                <i class="fas fa-layer-group me-1"></i> Manage Groups
+            </a>
+        </div>
+    </div>
+
+    <!-- ================= PROGRESS STATISTICS ================= -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-dark">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">TOTAL EMPLOYEES</h6>
+                    <h2 class="fw-bold">{{ total_employees }}</h2>
+                    <small class="text-muted">Active employees</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-dark">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">ASSIGNED COURSES</h6>
+                    <h2 class="fw-bold">{{ total_assigned_courses }}</h2>
+                    <small class="text-muted">Available courses</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-dark">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">COMPLETION RATE</h6>
+                    <h2 class="fw-bold">{{ completion_rate }}%</h2>
+                    <small class="text-muted">{{ completed_count }} completed</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-dark">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">IN PROGRESS</h6>
+                    <h2 class="fw-bold">{{ in_progress_count }}</h2>
+                    <small class="text-muted">Active assignments</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3">Course Assignment Status</h6>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="p-2">
+                                <h3 class="text-dark">{{ assigned_count }}</h3>
+                                <span class="badge bg-secondary">Assigned</span>
+                                <small class="d-block text-muted">Not started</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-2">
+                                <h3 class="text-dark">{{ in_progress_count }}</h3>
+                                <span class="badge bg-warning">In Progress</span>
+                                <small class="d-block text-muted">Currently learning</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-2">
+                                <h3 class="text-dark">{{ completed_count }}</h3>
+                                <span class="badge bg-success">Completed</span>
+                                <small class="d-block text-muted">Finished courses</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-2">
+                                <h3 class="text-dark">{{ total_assignments }}</h3>
+                                <span class="badge bg-dark">Total</span>
+                                <small class="d-block text-muted">All assignments</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ASSIGNED COURSES TABLE ================= -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-book me-2"></i>Assigned Courses
+            </h5>
+            <small class="text-light">Total: {{ total_assigned_courses }} courses</small>
+        </div>
+        <div class="card-body p-0">
+            {% if courses_with_groups %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Course</th>
+                            <th>Category</th>
+                            <th>Duration</th>
+                            <th>Assigned To Groups</th>
+                            <th>Employee Progress</th>
+                            <th class="pe-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in courses_with_groups %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    {% if item.course.thumbnail %}
+                                    <img src="{{ item.course.thumbnail.url }}" alt="{{ item.course.title }}" 
+                                         class="rounded me-3" width="50" height="50">
+                                    {% else %}
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 50px; height: 50px;">
+                                        <i class="fas fa-video text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{% url 'account:course_employee_progress' item.course.id %}" 
+                                           class="fw-bold text-dark text-decoration-none">
+                                            {{ item.course.title }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ item.course.brief_description|truncatechars:60 }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.course.category %}
+                                <span class="badge bg-light text-dark">{{ item.course.category.name }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-dark">{{ item.course.video_duration_minutes }} min</span>
+                            </td>
+                            <td>
+                                {% if item.assigned_groups %}
+                                    <div class="d-flex flex-wrap gap-1">
+                                    {% for group in item.assigned_groups %}
+                                        <span class="badge bg-dark">{{ group.name }}</span>
+                                    {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted fst-italic">No groups assigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.total_employees_assigned > 0 %}
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                        <div class="progress-bar bg-dark" 
+                                             style="width: {% widthratio item.completed_count item.total_employees_assigned 100 %}%">
+                                        </div>
+                                    </div>
+                                    <small class="text-nowrap">
+                                        {{ item.completed_count }}/{{ item.total_employees_assigned }}
+                                    </small>
+                                </div>
+                                {% else %}
+                                <span class="text-muted fst-italic">No employees assigned</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-center">
+                                <div class="d-flex justify-content-center gap-1">
+                                    <!-- FIXED: Enhanced Plus Button for Group Assignment -->
+                                    {% if user_groups.count > 0 %}
+                                    <div class="position-relative">
+                                        <button class="btn btn-sm btn-outline-dark" 
+                                                type="button" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#assignGroups{{ item.course.id }}"
+                                                title="Assign to User Groups"
+                                                aria-expanded="false"
+                                                aria-controls="assignGroups{{ item.course.id }}">
+                                            <i class="fas fa-plus me-1"></i>
+                                            {% if item.assigned_groups.count == 0 %}
+                                            <span class="d-none d-sm-inline">Add Group</span>
+                                            {% else %}
+                                            <span class="d-none d-sm-inline">Add More</span>
+                                            {% endif %}
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                    
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Enhanced Collapsible Group Assignment Section -->
+                        {% if user_groups.count > 0 %}
+                        <tr class="bg-light">
+                            <td colspan="6" class="p-0 border-0">
+                                <div class="collapse multi-collapse" id="assignGroups{{ item.course.id }}">
+                                    <div class="p-3 border-top border-secondary">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="bg-primary rounded-circle p-1 me-2">
+                                                <i class="fas fa-user-group text-white" style="font-size: 0.9rem;"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">Assign "{{ item.course.title }}" to User Groups</h6>
+                                                <small class="text-muted">
+                                                    Select one or more groups to assign this course
+                                                </small>
+                                            </div>
+                                        </div>
+                                        
+                                        <form method="post" 
+                                              action="{% url 'account:assign_course_to_group' item.course.id %}"
+                                              class="group-assignment-form"
+                                              data-course-id="{{ item.course.id }}">
+                                            {% csrf_token %}
+                                            
+                                            <!-- Quick Assignment Buttons -->
+                                            {% if user_groups|length > 3 %}
+                                            <div class="mb-3">
+                                                <small class="text-muted d-block mb-2">Quick Assign:</small>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    {% for group in user_groups %}
+                                                        {% if group not in item.assigned_groups %}
+                                                        <button type="button" 
+                                                                class="btn btn-sm btn-outline-primary quick-assign-btn"
+                                                                data-group-id="{{ group.id }}"
+                                                                data-course-id="{{ item.course.id }}">
+                                                            + {{ group.name }}
+                                                        </button>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- Available Groups Grid -->
+                                            <div class="mb-3">
+                                                <small class="text-muted d-block mb-2">Available User Groups:</small>
+                                                <div class="row">
+                                                    {% for group in user_groups %}
+                                                        {% if group not in item.assigned_groups %}
+                                                        <div class="col-md-4 mb-2">
+                                                            <div class="card border group-select-card" 
+                                                                 style="cursor: pointer; transition: all 0.2s;"
+                                                                 onclick="document.getElementById('group_{{ group.id }}_{{ item.course.id }}').click()">
+                                                                <div class="card-body p-3">
+                                                                    <div class="form-check mb-2">
+                                                                        <input class="form-check-input group-checkbox" 
+                                                                               type="checkbox" 
+                                                                               name="groups" 
+                                                                               value="{{ group.id }}" 
+                                                                               id="group_{{ group.id }}_{{ item.course.id }}"
+                                                                               data-group-name="{{ group.name }}">
+                                                                        <label class="form-check-label fw-medium" 
+                                                                               for="group_{{ group.id }}_{{ item.course.id }}">
+                                                                            <i class="fas fa-users me-1 text-primary"></i>
+                                                                            {{ group.name }}
+                                                                        </label>
+                                                                    </div>
+                                                                    <div class="d-flex justify-content-between align-items-center">
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-user me-1"></i>
+                                                                            {{ group.users.count }} members
+                                                                        </small>
+                                                                        <span class="badge bg-light text-dark">
+                                                                            {{ group.users.count }} active
+                                                                        </span>
+                                                                    </div>
+                                                                    {% if group.description %}
+                                                                    <small class="text-muted d-block mt-1">
+                                                                        <i class="fas fa-info-circle me-1"></i>
+                                                                        {{ group.description|truncatechars:40 }}
+                                                                    </small>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    
+                                                    {% if item.assigned_groups.count == user_groups.count %}
+                                                    <div class="col-12">
+                                                        <div class="alert alert-info mb-0">
+                                                            <i class="fas fa-check-circle me-2"></i>
+                                                            This course is already assigned to all available user groups.
+                                                        </div>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Already Assigned Groups -->
+                                            {% if item.assigned_groups %}
+                                            <div class="mb-3">
+                                                <small class="text-muted d-block mb-2">Already Assigned to:</small>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    {% for group in item.assigned_groups %}
+                                                    <span class="badge bg-dark py-2 px-3">
+                                                        <i class="fas fa-check me-1"></i>
+                                                        {{ group.name }}
+                                                        <small class="ms-1">({{ group.users.count }} users)</small>
+                                                    </span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- Action Buttons -->
+                                            <div class="d-flex justify-content-between align-items-center mt-4">
+
+                                                <div class="d-flex gap-2">
+                                                    <button type="submit" 
+                                                            class="btn btn-dark px-4"
+                                                            id="assignBtn{{ item.course.id }}">
+                                                        <i class="fas fa-check me-1"></i> Assign Selected Groups
+                                                    </button>
+                                                    <button type="button" 
+                                                            class="btn btn-outline-dark"
+                                                            data-bs-toggle="collapse" 
+                                                            data-bs-target="#assignGroups{{ item.course.id }}">
+                                                        <i class="fas fa-times me-1"></i> Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No courses assigned yet</h5>
+                <p class="text-muted">Platform admin will assign courses to your company.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Stats Footer -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="fas fa-chart-line me-2"></i>Performance Summary
+                    </h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <small class="text-muted">Average Completion Rate</small>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar bg-dark" style="width: {{ completion_rate }}%"></div>
+                                    </div>
+                                    <span class="fw-bold">{{ completion_rate }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <small class="text-muted">Active Learners</small>
+                                <h5 class="fw-bold">{{ in_progress_count }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Bootstrap components
+        var collapseElements = document.querySelectorAll('[data-bs-toggle="collapse"]');
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Auto-close other collapsible when opening one
+        collapseElements.forEach(function(element) {
+            element.addEventListener('click', function() {
+                var targetId = this.getAttribute('data-bs-target');
+                var isExpanding = !this.classList.contains('collapsed');
+                
+                if (isExpanding) {
+                    // Close other open collapsibles
+                    document.querySelectorAll('.collapse.show').forEach(function(openCollapse) {
+                        if (openCollapse.id !== targetId.substring(1)) {
+                            var bsCollapse = bootstrap.Collapse.getInstance(openCollapse);
+                            if (bsCollapse) {
+                                bsCollapse.hide();
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Enhanced group selection functionality
+        document.querySelectorAll('.group-checkbox').forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                updateSelectedCount(this);
+            });
+        });
+        
+        // Group selection card click handler
+        document.querySelectorAll('.group-select-card').forEach(function(card) {
+            card.addEventListener('click', function(e) {
+                if (!e.target.closest('.form-check-input')) {
+                    var checkbox = this.querySelector('.group-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                }
+            });
+        });
+        
+        // Quick assign button functionality
+        document.querySelectorAll('.quick-assign-btn').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var groupId = this.getAttribute('data-group-id');
+                var courseId = this.getAttribute('data-course-id');
+                var checkbox = document.getElementById('group_' + groupId + '_' + courseId);
+                
+                if (checkbox) {
+                    checkbox.checked = true;
+                    checkbox.dispatchEvent(new Event('change'));
+                    
+                    // Visual feedback
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-primary');
+                    this.innerHTML = '✓ ' + this.innerHTML.substring(2);
+                    setTimeout(() => {
+                        this.classList.remove('btn-primary');
+                        this.classList.add('btn-outline-primary');
+                        this.innerHTML = '+ ' + this.innerHTML.substring(2);
+                    }, 1500);
+                }
+            });
+        });
+        
+        // Form submission handler
+        document.querySelectorAll('.group-assignment-form').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                var selectedGroups = this.querySelectorAll('.group-checkbox:checked');
+                if (selectedGroups.length === 0) {
+                    e.preventDefault();
+                    alert('Please select at least one group to assign the course to.');
+                    return false;
+                }
+                
+                // Show loading state
+                var submitBtn = this.querySelector('button[type="submit"]');
+                var originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Assigning...';
+                submitBtn.disabled = true;
+                
+                // Re-enable after 3 seconds if still on page
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 3000);
+            });
+        });
+        
+        function updateSelectedCount(checkbox) {
+            var form = checkbox.closest('.group-assignment-form');
+            if (!form) return;
+            
+            var courseId = form.getAttribute('data-course-id');
+            var selectedCount = form.querySelectorAll('.group-checkbox:checked').length;
+            var countElement = document.getElementById('selectedCount' + courseId);
+            var assignBtn = document.getElementById('assignBtn' + courseId);
+            
+            if (countElement) {
+                countElement.textContent = selectedCount + ' group' + (selectedCount !== 1 ? 's' : '') + ' selected';
+                countElement.className = 'badge ' + (selectedCount > 0 ? 'bg-primary' : 'bg-secondary');
+            }
+            
+            if (assignBtn) {
+                assignBtn.disabled = selectedCount === 0;
+            }
+            
+            // Update card visual state
+            var card = checkbox.closest('.group-select-card');
+            if (card) {
+                card.style.boxShadow = checkbox.checked ? '0 0 0 2px rgba(13, 110, 253, 0.25)' : 'none';
+                card.style.borderColor = checkbox.checked ? '#0d6efd' : '#dee2e6';
+            }
+        }
+        
+        // Initialize counts on page load
+        document.querySelectorAll('.group-checkbox').forEach(function(checkbox) {
+            updateSelectedCount(checkbox);
+        });
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Close all open collapsibles on Escape
+                document.querySelectorAll('.collapse.show').forEach(function(openCollapse) {
+                    var bsCollapse = bootstrap.Collapse.getInstance(openCollapse);
+                    if (bsCollapse) {
+                        bsCollapse.hide();
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<style>
+    .group-select-card:hover {
+        border-color: #0d6efd !important;
+        transform: translateY(-2px);
+    }
+    
+    .group-select-card .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    .quick-assign-btn {
+        transition: all 0.2s;
+    }
+    
+    .quick-assign-btn:hover {
+        transform: translateY(-1px);
+    }
+    
+    .badge.bg-dark {
+        background-color: #212529 !important;
+    }
+    
+    [data-bs-toggle="collapse"]:not(.collapsed) {
+        background-color: #212529 !important;
+        color: white !important;
+    }
+</style>
 {% endblock %}
