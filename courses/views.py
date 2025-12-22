@@ -151,33 +151,50 @@ def platform_admin_dashboard(request):
 @login_required
 @platform_admin_required
 def create_course(request):
-    # Get all existing courses for the table (only when not in edit mode)
-    courses = Course.objects.all().order_by('-created_at')  # Show newest first
-    
+    courses = Course.objects.all().order_by('-created_at')
+
     if request.method == 'POST':
         form = CourseForm(request.POST, request.FILES)
+        print("POST DATA:", request.POST)
+
+        if not form.is_valid():
+            print("FORM ERRORS:", form.errors)
+
         if form.is_valid():
             course = form.save(commit=False)
             course.created_by = request.user
-            
-            if course.is_published and not course.published_at:
+
+            visibility = request.POST.get('visibility')
+
+            if visibility == 'private':
+                course.is_published = False
+                course.published_at = None
+
+            elif visibility in ['global', 'specific']:
+                course.is_published = True
                 course.published_at = timezone.now()
             
+            course.points_reward = 100
             course.save()
+
             messages.success(request, f'✅ Course "{course.title}" created!')
-            
-            if 'save_and_assign' in request.POST:
-                return redirect('courses:assign_course_to_companies', course_id=course.id)
-            else:
-                return redirect('courses:platform_admin_dashboard')
+
+            if visibility == 'specific':
+                return redirect(
+                    'courses:assign_course_to_companies',
+                    course_id=course.id
+                )
+
+            return redirect('courses:platform_admin_dashboard')
+
     else:
+        # ✅ هذا أهم سطر كان ناقص
         form = CourseForm()
-    
-    # Render with all necessary context
+
     return render(request, 'courses/create_course.html', {
         'form': form,
-        'courses': courses,  # For the courses table
-        'is_edit': False,    # Important: tells template this is create mode
+        'courses': courses,
+        'is_edit': False,
     })
 
 # ==================== COURSE EDITING ====================
@@ -195,7 +212,7 @@ def edit_course(request, course_id):
         if form.is_valid():
             updated_course = form.save(commit=False)
             
-            # Handle publish date
+            
             if updated_course.is_published and not updated_course.published_at:
                 updated_course.published_at = timezone.now()
             
@@ -205,12 +222,11 @@ def edit_course(request, course_id):
     else:
         form = CourseForm(instance=course)
     
-    # Render edit template
+    
     return render(request, 'courses/create_course.html', {
         'form': form,
-        'course': course,    # Current course being edited
-        'is_edit': True,     # Important: tells template this is edit mode
-        # Don't need 'courses' in edit mode since table won't show
+        'course': course,   
+        'is_edit': True,     
     })
 
 @login_required

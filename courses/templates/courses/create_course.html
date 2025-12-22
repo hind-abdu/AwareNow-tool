@@ -64,7 +64,7 @@
 
                     <!-- Category & Thumbnail -->
                     <div class="row">
-                        <!-- <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label small">Category</label>
                             <select
                                 name="category"
@@ -81,7 +81,7 @@
                             {% for error in form.category.errors %}
                                 <div class="invalid-feedback">{{ error }}</div>
                             {% endfor %}
-                        </div> -->
+                        </div>
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label small">Thumbnail Image</label>
@@ -146,9 +146,58 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-4">
+                  <h5 class="fw-semibold mb-3">Course Publishing</h5>
+              
+                  <div class="form-check mb-3">
+                    <input class="form-check-input"
+                           type="radio"
+                           name="visibility"
+                           id="draft"
+                           value="private"
+                           checked>
+                    <label class="form-check-label fw-medium" for="draft">
+                      Save as Draft
+                    </label>
+                    <div class="text-muted small">
+                      Course will not be visible to any company.
+                    </div>
+                  </div>
+              
+                  <div class="form-check mb-3">
+                    <input class="form-check-input"
+                           type="radio"
+                           name="visibility"
+                           id="publish_all"
+                           value="global">
+                    <label class="form-check-label fw-medium" for="publish_all">
+                      Publish to all companies
+                    </label>
+                    <div class="text-muted small">
+                      Course will be available to all active companies.
+                    </div>
+                  </div>
+              
+                  <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           name="visibility"
+                           id="publish_specific"
+                           value="specific">
+                    <label class="form-check-label fw-medium" for="publish_specific">
+                      Publish to specific companies
+                    </label>
+                    <div class="text-muted small">
+                      You will choose companies in the next step.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+            <!-- <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
                     <h5 class="fw-semibold mb-3">Course Settings</h5>
 
-                    <!-- Visibility & Points -->
+                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label small">Visibility</label>
@@ -183,7 +232,7 @@
                         </div>
                     </div>
 
-                    <!-- Publish Checkbox -->
+                    
                     <div class="form-check">
                         <input
                             type="checkbox"
@@ -201,18 +250,24 @@
                     </div>
 
                 </div>
-            </div>
+            </div> -->
         </div>
 
         <!-- Submit -->
-        <div class="col-12 d-flex justify-content-end gap-2">
+        <div class="col-12 d-flex justify-content-end">
+            <button type="submit" class="btn btn-brand px-5">
+              Save Course
+            </button>
+        </div>
+          
+        <!-- <div class="col-12 d-flex justify-content-end gap-2">
             <button type="submit" name="save" class="btn btn-dark px-4">
                 Save Course
             </button>
             <button type="submit" name="save_and_assign" class="btn btn-success px-4">
                 Save & Assign
             </button>
-        </div>
+        </div> -->
 
     </form>
 </div>
