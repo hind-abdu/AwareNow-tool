@@ -18,7 +18,7 @@
             </small>
         </div>
 
-        <button class="btn btn-dark" data-bs-toggle="collapse" data-bs-target="#createUserForm">
+        <button class="btn text-light" data-bs-toggle="collapse" data-bs-target="#createUserForm" style="background-color: #7b1020;">
             + Create User
         </button>
     </div>
@@ -123,7 +123,7 @@
                 </div>
 
                 <div class="mt-4 d-flex justify-content-end">
-                    <button type="submit" class="btn btn-success">
+                    <button type="submit" class="btn text-light" style="background-color: #7b1020;">
                         Create User
                     </button>
                 </div>
@@ -132,7 +132,7 @@
     </div>
     <!-- ========= Tab -> user group ======= -->
     <ul class="nav nav-pills users-tabs mb-4">
-        <li class="nav-item">
+        <li class="nav-item" >
             <a class="nav-link {% if request.resolver_match.url_name == 'company-users' %}active{% endif %}"
                href="{% url 'account:company-users' %}">
                 Users
@@ -174,7 +174,7 @@
         </select>
     
         <!-- Submit -->
-        <button type="submit" class="btn btn-sm btn-outline-dark">
+        <button type="submit" class="btn btn-sm text-light" style="background-color: #7b1020;">
             Filter
         </button>
     </form>
@@ -206,9 +206,9 @@
 
                         <td>
                             {% if user.role == "COMPANY_ADMIN" %}
-                                <span class="badge bg-dark">Admin</span>
+                                <span class="badge text-light" style="background-color: #7b1020;">Admin</span>
                             {% else %}
-                                <span class="badge bg-secondary">Employee</span>
+                                <span class="badge bg-dark">Employee</span>
                             {% endif %}
                         </td>
 
@@ -219,7 +219,7 @@
                         <td>                          
                             {% for group in user.company_groups.all %}
                                 {% if not group.is_system %}
-                                    <span class="badge bg-light text-dark border">
+                                    <span class="badge bg-light text-dark ">
                                         {{ group.name }}
                                     </span>
                                 {% endif %}
@@ -232,7 +232,7 @@
                             {% if user.is_disabled %}
                                 <span class="badge bg-danger">Disabled</span>
                             {% elif user.is_active %}
-                                <span class="badge bg-success">Active</span>
+                                <span class="badge badge-soft-success">Active</span>
                             {% else %}
                                 <span class="badge bg-warning text-dark">Pending</span>
                             {% endif %}
