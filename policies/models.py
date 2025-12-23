@@ -1,23 +1,53 @@
 from django.db import models
 from django.conf import settings
+from account.models import CompanyGroup
 
 
-class UserGroup(models.Model):
-    name = models.CharField(max_length=100)
+# class UserGroup(models.Model):
+#     name = models.CharField(max_length=100)
 
-    def __str__(self):
-        return self.name
+#     def __str__(self):
+#         return self.name
 
+
+# class Policy(models.Model):
+#     title = models.CharField(max_length=255)
+#     description = models.TextField()
+
+#     is_published = models.BooleanField(default=False)
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     groups = models.ManyToManyField(
+#         UserGroup,
+#         through='PolicyAudience',
+#         related_name='policies'
+#     )
+
+#     def __str__(self):
+#         return self.title
+
+
+# class PolicyAudience(models.Model):
+#     policy = models.ForeignKey(
+#         Policy,
+#         on_delete=models.CASCADE
+#     )
+#     group = models.ForeignKey(
+#         UserGroup,
+#         on_delete=models.CASCADE
+#     )
+
+#     def __str__(self):
+#         return f"{self.policy.title} - {self.group.name}"
 
 class Policy(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
-
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     groups = models.ManyToManyField(
-        UserGroup,
+        CompanyGroup,
         through='PolicyAudience',
         related_name='policies'
     )
@@ -27,17 +57,12 @@ class Policy(models.Model):
 
 
 class PolicyAudience(models.Model):
-    policy = models.ForeignKey(
-        Policy,
-        on_delete=models.CASCADE
-    )
-    group = models.ForeignKey(
-        UserGroup,
-        on_delete=models.CASCADE
-    )
+    policy = models.ForeignKey(Policy, on_delete=models.CASCADE)
+    group = models.ForeignKey(CompanyGroup, on_delete=models.CASCADE)
 
-    def __str__(self):
-        return f"{self.policy.title} - {self.group.name}"
+    class Meta:
+        unique_together = ('policy', 'group')
+
 
 
 class PolicyAcknowledgement(models.Model):

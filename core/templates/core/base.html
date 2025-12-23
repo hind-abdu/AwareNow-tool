@@ -128,13 +128,20 @@
           </a>
         </li>
 
-        <li class="nav-item">
-          <a class="nav-link nav-secondary" href="#">Library</a>
-        </li>
+        <!-- <li class="nav-item">
+          <a class="nav-link nav-secondary {% if request.resolver_match.url_name in 'company-users company-groups' %}active-nav{% endif %}" href="#">Library</a>
+        </li> -->
 
         <li class="nav-item">
-          <a class="nav-link nav-secondary" href="#">Policies</a>
+          <a class="nav-link nav-secondary
+             {% if request.resolver_match.app_name == 'policies' %}
+               active-nav
+             {% endif %}"
+             href="{% url 'policies:policy_list' %}">
+            Policies
+          </a>
         </li>
+        
 
         <!-- Campaigns Dropdown (Desktop only) -->
         <li class="nav-item dropdown">
@@ -181,7 +188,7 @@
 
         <!-- Policies -->
         <li class="nav-item">
-          <a class="nav-link nav-secondary text-center" href="#">
+          <a class="nav-link nav-secondary text-center" href="{% url 'policies:policy_list' %}">
             Policies
           </a>
         </li>
@@ -219,9 +226,12 @@
       <ul class="navbar-nav align-items-center gap-3 d-none d-lg-flex">
 
         <li class="nav-item">
-          <a class="nav-link nav-secondary {% if request.resolver_match.url_name == 'employee_policies' %}active-nav{% endif %}"
-              href="#">
-              Policies
+          <a class="nav-link nav-secondary
+             {% if request.resolver_match.app_name == 'policies' %}
+                active-nav
+             {% endif %}"
+             href="{% url 'policies:policy_list' %}">
+             Policies
           </a>
         </li>
 

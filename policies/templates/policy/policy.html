@@ -16,9 +16,12 @@ Policies
     <div class="pl-header">
         <h2 class="pl-title">Policies</h2>
 
+        {% if request.user.role == "COMPANY_ADMIN" %}
         <a href="{% url 'policies:create_policy' %}" class="pl-create-btn">
             + Create Policy
         </a>
+        {% endif %}
+
     </div>
 
     <!-- All Policies -->
@@ -34,11 +37,29 @@ Policies
                         {{ policy.description|truncatechars:120 }}
                     </p>
 
-                    <div class="pl-card-actions">
+                    <!-- <div class="pl-card-actions">
                         <a href="{% url 'policies:policy_detail' policy.id %}" class="pl-detail-btn">
                             View Details
                         </a>
+                    </div> -->
+
+                    <div class="pl-card-actions">
+
+                        {% if request.user.role == "EMPLOYEE" %}
+                            <a href="{% url 'policies:policy_acknowledge' policy.id %}"
+                               class="pl-detail-btn">
+                               Acknowledge
+                            </a>
+                        
+                        {% elif request.user.role == "COMPANY_ADMIN" %}
+                            <a href="{% url 'policies:policy_detail' policy.id %}"
+                               class="pl-detail-btn">
+                               View Acknowledgements
+                            </a>
+                        {% endif %}
+                        
                     </div>
+                        
                 </div>
             {% empty %}
                 <p class="pl-empty">No policies found.</p>
