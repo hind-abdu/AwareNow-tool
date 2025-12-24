@@ -59,45 +59,47 @@
 
     <!-- Group Users -->
     <div class="card border-0 shadow-sm">
-        <div class="table-responsive"></div>
-            <table class="table mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Department</th>
-                        <th class="text-end">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in group_users %}
-                    <tr>
-                        <td>{{ user.get_full_name|default:user.email }}</td>
-                        <!-- <td>{{ user.email }}</td>
-                        <td class="text-end"> -->
-                            <td>{{ user.email }}</td>
-                            <td>
-                                {{ user.department|default:"-" }}
-                            </td>
-                            <td class="text-end">
-
-                            <a href="{% url 'account:remove-user-from-group' group.id user.id %}"
-                            class="btn btn-sm btn-outline-danger">
-                                Remove
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center text-muted py-4">
-                            No users in this group
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-         </div>
+        <div class="table-responsive">
+          <table class="table mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in group_users %}
+              <tr>
+                <td>{{ user.get_full_name|default:user.email }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.department|default:"-" }}</td>
+                <td class="text-end">
+                  <a href="{% url 'account:remove-user-from-group' group.id user.id %}"
+                     class="icon-action"
+                     data-bs-toggle="tooltip"
+                     title="Remove from group"
+                     onclick="return confirm('Remove this user from the group?')">
+      
+                    <span class="material-symbols-outlined action-icon text-brand">
+                      person_remove
+                    </span>
+      
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">
+                  No users in this group
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
     </div>
-
+      
 </div>
 {% endblock %}
