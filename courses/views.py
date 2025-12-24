@@ -20,13 +20,23 @@ from django.http import JsonResponse
 
 
 # ==================== PERMISSION CHECK ====================
+
+# def platform_admin_required(view_func):
+#     def wrapper(request, *args, **kwargs):
+#         if not request.user.is_authenticated:
+#             return redirect('account:platform-login')
+
+#         if request.user.role != "PLATFORM_ADMIN":
+#             return redirect('account:platform-login')
+
+#         return view_func(request, *args, **kwargs)
+#     return wrapper
+
 def platform_admin_required(view_func):
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('account:platform-login')
         
-        # if not (request.user.is_platform_admin or request.user.is_superuser):
-        #     return HttpResponseForbidden("Access denied. Platform admin privileges required.")
         if not request.user.is_superuser:
             return HttpResponseForbidden("Platform admin only.")
 
@@ -407,6 +417,7 @@ def course_companies_view(request, course_id):
 
 # views.py
 @login_required
+# @platform_admin_required
 def create_category(request):
     """Create a new category - admin only"""
     if not request.user.is_platform_admin:
@@ -433,6 +444,7 @@ def create_category(request):
     return render(request, 'courses/category_form.html', context)
 
 @login_required
+# @platform_admin_required
 def update_category(request, pk):
     """Update a category - admin only"""
     if not request.user.is_platform_admin:
@@ -463,6 +475,7 @@ def update_category(request, pk):
 
 # views.py
 @login_required
+# @platform_admin_required
 def delete_category(request, pk):
     """Delete a category - admin only"""
     if not request.user.is_platform_admin:
@@ -488,7 +501,8 @@ def delete_category(request, pk):
     return render(request, 'courses/category_confirm_delete.html', context)
 
 @login_required
-def category_list(request):
+# @platform_admin_required
+def categories_list(request):
     # Check if user is platform admin
     if not request.user.is_platform_admin:
         messages.error(request, "Access denied. Platform admin privileges required.")
